@@ -10,14 +10,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return  MaterialApp(
+    return MaterialApp(
       title: 'Skin Tracking App',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.red,
+          primary: Colors.white,
+          secondary: Colors.blueGrey,
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
       ),
       home: const LoginPage(),
     );
   }
 }
-
