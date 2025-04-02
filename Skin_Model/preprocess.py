@@ -7,72 +7,84 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 
-IMAGE_DIR = "dataset/ISIC-images/"  
-IMG_SIZE = 224  # Required for MobileNetV2 , this is the pretrained CNN i will use to ensure high accuracy
+IMAGE_DIR = "dataset/ISIC-images/"
+IMG_SIZE = 224
+CSV_PATH = "dataset/train.csv"
 
-# Load Metadata CSV
-df = pd.read_csv("dataset/train.csv", low_memory=False, dtype=str)
-
-
+#  load metadata
+df = pd.read_csv(CSV_PATH, low_memory=False, dtype=str)
 image_column = "isic_id" if "isic_id" in df.columns else "image_name"
 
+# Remove rows with missing diagnosis
+df = df[df["diagnosis"].notna()]
 
+# Create mapping
 disease_mapping = {disease: idx for idx, disease in enumerate(df["diagnosis"].unique())}
+index_mapping = {v: k for k, v in disease_mapping.items()}
 df["target"] = df["diagnosis"].map(disease_mapping)
 
+print("Label Mapping:", disease_mapping)
 
-print("Disease Label Mapping:", disease_mapping)
-
-#  Function to Remove Metadata
+#  remove exif
 def remove_exif(image_path):
     try:
         img = Image.open(image_path)
-        img = img.convert("RGB")  # Removes EXIF metadata
+        img = img.convert("RGB")
         return img
     except Exception as e:
-        print(f" Error loading {image_path}: {e}")
+        print(f"Error loading {image_path}: {e}")
         return None
 
-#  Preprocess Images (Resize, Normalize)
-def load_and_preprocess_image(image_id):
-    img_path = os.path.join(IMAGE_DIR, image_id + ".jpg")
-
-    # Remove metadata
-    img = remove_exif(img_path)
+# image preprocessing
+def preprocess_image(image_id):
+    path = os.path.join(IMAGE_DIR, image_id + ".jpg")
+    img = remove_exif(path)
     if img is None:
-        return None  # Skip missing files
-
-    # Convert to OpenCV format
+        return None
     img = np.array(img)
-
-    # Resize to 224x224
     img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
-
-    # Normalize pixel values (0-1)
-    img = img / 255.0
-
-    return img
+    return img / 255.0
 
 
-df_sample = df.head(50)  # Take the first 50 rows for testing
+X, y, failed = [], [], []
 
-#  Apply Preprocessing to  Images
-X_sample, y_sample = [], []
-missing_files = []
-
-for i, row in tqdm(df_sample.iterrows(), total=len(df_sample)):
-    img = load_and_preprocess_image(row[image_column])  
+print("📦 Loading images...")
+for i, row in tqdm(df.iterrows(), total=len(df)):
+    img = preprocess_image(row[image_column])
     if img is not None:
-        X_sample.append(img)
-        y_sample.append(row["target"])  
+        X.append(img)
+        y.append(int(row["target"]))
     else:
-        missing_files.append(row[image_column])
+        failed.append(row[image_column])
 
-print(f" Sample Test: {len(X_sample)} images processed.")
-print(f" Missing Images: {len(missing_files)}")
+print(f" Processed: {len(X)} images |  Failed: {len(failed)}")
 
-#   Sample Data saved Separately for testing
-np.save("X_sample.npy", np.array(X_sample))
-np.save("y_sample.npy", np.array(y_sample))
+X = np.array(X)
+y = np.array(y)
 
-print(" Preprocessing Test Complete! Saved as `X_sample.npy` and `y_sample.npy`.")
+label_counts = Counter(y)
+valid_indices = [i for i, label in enumerate(y) if label_counts[label] >= 2]
+
+X = X[valid_indices]
+y = y[valid_indices]
+
+#SPLIT (70/30)
+X_train, X_val, y_train, y_val = train_test_split(
+    X, y, test_size=0.3, stratify=y, random_state=42
+)
+
+
+np.save("X_train.npy", X_train)
+np.save("X_val.npy", X_val)
+np.save("y_train.npy", y_train)
+np.save("y_val.npy", y_val)
+
+np.save("label_to_index.npy", disease_mapping)
+np.save("index_to_label.npy", index_mapping)
+
+print(" Done! Saved:")
+print(" - X_train.npy")
+print(" - X_val.npy")
+print(" - y_train.npy")
+print(" - y_val.npy")
+
