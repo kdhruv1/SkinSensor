@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Load sample data
-X_sample = np.load("X_sample.npy")
-y_sample = np.load("y_sample.npy")
+X_sample = np.load("X_train.npy")
+y_sample = np.load("y_train.npy")
 index_to_label = np.load("index_to_label.npy", allow_pickle=True).item()
 
 

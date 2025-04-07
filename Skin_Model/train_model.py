@@ -16,6 +16,14 @@ y_train = np.load("y_train.npy")
 y_val = np.load("y_val.npy")
 index_to_label = np.load("index_to_label.npy", allow_pickle=True).item()
 
+unique_labels = np.unique(y_train)
+label_remap = {old: new for new, old in enumerate(unique_labels)}
+
+y_train = np.array([label_remap[label] for label in y_train])
+y_val = np.array([label_remap[label] for label in y_val])
+
+index_to_label = {new: index_to_label[old] for old, new in label_remap.items()}
+
 print(f"Train Samples: {X_train.shape[0]} | Val Samples: {X_val.shape[0]}")
 print(f"Number of Classes: {len(np.unique(y_train))}")
 print(f"Class Distribution: {Counter(y_train)}")
