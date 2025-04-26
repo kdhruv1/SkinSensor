@@ -1,122 +1,168 @@
+import os
+import json
 import numpy as np
 import matplotlib.pyplot as plt
-from collections import Counter
-from sklearn.utils.class_weight import compute_class_weight
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten, Dropout
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.utils.class_weight import compute_class_weight
+from tensorflow.keras import layers, models
 from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-import tensorflow.keras.backend as K
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
-# ==== Custom Focal Loss ====
-def sparse_categorical_focal_loss(gamma=2.0, alpha=0.25):
-    def loss_fn(y_true, y_pred):
-        y_true = tf.cast(y_true, tf.int32)
-        y_true = tf.one_hot(y_true, depth=tf.shape(y_pred)[-1])
-        y_pred = K.clip(y_pred, K.epsilon(), 1.0 - K.epsilon())
-        cross_entropy = -y_true * K.log(y_pred)
-        loss = alpha * K.pow(1 - y_pred, gamma) * cross_entropy
-        return K.sum(loss, axis=1)
-    return loss_fn
+#  forcing the cpu as gpu runs out of ram
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
-# ==== Load Preprocessed Data ====
+# loading data
 X_train = np.load("X_train.npy")
 X_val = np.load("X_val.npy")
 y_train = np.load("y_train.npy")
 y_val = np.load("y_val.npy")
-index_to_label = np.load("index_to_label.npy", allow_pickle=True).item()
 
-# ==== Label Remapping ====
-unique_labels = np.unique(y_train)
-label_remap = {old: new for new, old in enumerate(unique_labels)}
-y_train = np.array([label_remap[label] for label in y_train])
-y_val = np.array([label_remap[label] for label in y_val])
-index_to_label = {new: index_to_label[old] for old, new in label_remap.items()}
+with open("index_to_label.json") as f:
+    index_to_label = json.load(f)
 
-print(f"Train Samples: {X_train.shape[0]} | Val Samples: {X_val.shape[0]}")
-print(f"Number of Classes: {len(np.unique(y_train))}")
-print(f"Class Distribution: {Counter(y_train)}")
+NUM_CLASSES = len(np.unique(y_train))
+IMG_SIZE = 224
 
-# ==== Class Weights ====
+
+if X_train.shape[1] != IMG_SIZE:
+    from tensorflow.image import resize
+    X_train = np.array([resize(img, (IMG_SIZE, IMG_SIZE)).numpy() for img in X_train])
+    X_val = np.array([resize(img, (IMG_SIZE, IMG_SIZE)).numpy() for img in X_val])
+
+# weights for classes
 class_weights = compute_class_weight(
-    class_weight="balanced",
+    class_weight='balanced',
     classes=np.unique(y_train),
     y=y_train
 )
 class_weights = dict(enumerate(class_weights))
 
-# ==== Data Augmentation ====
-datagen = ImageDataGenerator(
-    rotation_range=15,
-    width_shift_range=0.1,
-    height_shift_range=0.1,
-    zoom_range=0.1,
-    horizontal_flip=True
-)
+# mixup and cutmix
+def sample_beta_distribution(size, concentration=0.3):
+    return np.random.beta(concentration, concentration, size)
 
-# ==== Model Definition ====
-base_model = MobileNetV2(include_top=False, input_shape=(224, 224, 3), weights='imagenet')
+def mixup_cutmix(x, y, alpha=0.2):
+    lam = sample_beta_distribution(1, alpha)[0]
+    batch_size = x.shape[0]
+    idx = np.random.permutation(batch_size)
+    x1, y1 = np.array(x), np.array(y)
+    x2, y2 = x1[idx], y1[idx]
+
+    if np.random.rand() > 0.5:
+        mixed_x = lam * x1 + (1 - lam) * x2
+    else:
+        cut_w = int(IMG_SIZE * np.sqrt(1 - lam))
+        cut_h = int(IMG_SIZE * np.sqrt(1 - lam))
+        cx = np.random.randint(IMG_SIZE)
+        cy = np.random.randint(IMG_SIZE)
+
+        x1_copy = x1.copy()
+        x1_copy[:, max(0, cy - cut_h // 2):min(IMG_SIZE, cy + cut_h // 2),
+        max(0, cx - cut_w // 2):min(IMG_SIZE, cx + cut_w // 2), :] = \
+            x2[:, max(0, cy - cut_h // 2):min(IMG_SIZE, cy + cut_h // 2),
+            max(0, cx - cut_w // 2):min(IMG_SIZE, cx + cut_w // 2), :]
+        mixed_x = x1_copy
+
+    return mixed_x, lam * y1 + (1 - lam) * y2
+
+def mixed_generator(X, y, batch_size):
+    while True:
+        idx = np.random.choice(len(X), batch_size)
+        x_batch = np.array(X[idx])
+        y_batch = to_categorical(y[idx], NUM_CLASSES)
+        mixed_x, mixed_y = mixup_cutmix(x_batch, y_batch)
+        yield mixed_x, mixed_y
+
+# model
+base_model = MobileNetV2(input_shape=(IMG_SIZE, IMG_SIZE, 3), include_top=False, weights='imagenet')
 base_model.trainable = True
-for layer in base_model.layers[:100]:
-    layer.trainable = False  # Freeze base layers
+for layer in base_model.layers[:50]:
+    layer.trainable = False
 
-model = Sequential([
+model = models.Sequential([
     base_model,
-    Flatten(),
-    Dropout(0.3),
-    Dense(128, activation='relu'),
-    Dense(len(np.unique(y_train)), activation='softmax')
+    layers.GlobalAveragePooling2D(),
+    layers.Dropout(0.3),
+    layers.Dense(NUM_CLASSES, activation='softmax')
 ])
 
 model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=5e-5),
-    loss=sparse_categorical_focal_loss(gamma=2.0, alpha=0.25),
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+    loss='categorical_crossentropy',
     metrics=['accuracy']
 )
 
-# ==== Training ====
+# configuration for training (use this to try and get better accacury )
+EPOCHS = 30
+BATCH_SIZE = 32
+y_val_cat = to_categorical(y_val, NUM_CLASSES)
+
+callbacks = [
+    EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True),
+    ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3),
+    ModelCheckpoint("best_model.h5", monitor='val_accuracy', save_best_only=True)
+]
+
+# trainingn
 history = model.fit(
-    datagen.flow(X_train, y_train, batch_size=32),
-    validation_data=(X_val, y_val),
-    epochs=30,
+    mixed_generator(X_train, y_train, BATCH_SIZE),
+    steps_per_epoch=len(X_train) // BATCH_SIZE,
+    validation_data=(X_val, y_val_cat),
+    epochs=EPOCHS,
     class_weight=class_weights,
-    callbacks=[
-        EarlyStopping(patience=5, restore_best_weights=True),
-        ReduceLROnPlateau(patience=2, factor=0.5, verbose=1)
-    ]
+    callbacks=callbacks
 )
 
-# ==== Accuracy & Loss Plot ====
-plt.figure(figsize=(10, 4))
+# evaluation
+val_preds = model.predict(X_val)
+y_pred = np.argmax(val_preds, axis=1)
 
+print("\n Classification Report:")
+print(classification_report(y_val, y_pred, target_names=[index_to_label[str(i)] for i in range(NUM_CLASSES)]))
+
+# confusion matrix
+cm = confusion_matrix(y_val, y_pred, normalize='true')
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(index_to_label.values()))
+fig, ax = plt.subplots(figsize=(12, 8))
+disp.plot(cmap='Blues', ax=ax, xticks_rotation=45)
+plt.title(" Normalized Confusion Matrix")
+plt.tight_layout()
+plt.show()
+
+# accuracy and plots
+plt.figure(figsize=(14, 5))
 plt.subplot(1, 2, 1)
 plt.plot(history.history['accuracy'], label='Train Acc')
 plt.plot(history.history['val_accuracy'], label='Val Acc')
-plt.legend()
 plt.title("Accuracy")
+plt.legend()
 
 plt.subplot(1, 2, 2)
 plt.plot(history.history['loss'], label='Train Loss')
 plt.plot(history.history['val_loss'], label='Val Loss')
-plt.legend()
 plt.title("Loss")
+plt.legend()
 plt.tight_layout()
 plt.show()
 
-# ==== Predictions ====
-val_preds = model.predict(X_val)
-val_labels = np.argmax(val_preds, axis=1)
+#  prediction
+import random
+sample_indices = random.sample(range(len(X_val)), 6)
+for idx in sample_indices:
+    image = X_val[idx]
+    true_label = index_to_label[str(y_val[idx])]
+    pred_probs = model.predict(np.expand_dims(image, axis=0), verbose=0)[0]
+    pred_idx = np.argmax(pred_probs)
+    pred_label = index_to_label[str(pred_idx)]
+    confidence = pred_probs[pred_idx] * 100
 
-# ==== Sample Output ====
-plt.figure(figsize=(15, 4))
-for i in range(10):
-    plt.subplot(1, 5, i + 1)
-    plt.imshow(X_val[i])
-    pred_label = index_to_label.get(val_labels[i], "Unknown")
-    true_label = index_to_label.get(int(y_val[i]), "Unknown")
-    plt.title(f"P: {pred_label}\nT: {true_label}", fontsize=8)
-    plt.axis("off")
-plt.tight_layout()
-plt.show()
+    plt.figure()
+    plt.imshow(image)
+    plt.axis('off')
+    plt.title(f"True: {true_label}\nPredicted: {pred_label} ({confidence:.1f}%)")
+    plt.show()
+
+# saving
+print(" Model saved as best_model.h5")
