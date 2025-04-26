@@ -1,5 +1,5 @@
 import os
-import cv2
+import json
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -7,91 +7,173 @@ from tqdm import tqdm
 from collections import Counter
 from sklearn.model_selection import train_test_split
 
-# ==== CONFIG ====
-IMAGE_DIR = "dataset/ISIC-images/"  # folder with all your images
-CSV_PATH = "dataset/train.csv"       # your metadata file
-IMG_SIZE = 224                       # input size for MobileNetV2
 
-# ==== LOAD METADATA ====
-df = pd.read_csv(CSV_PATH, low_memory=False, dtype=str)
-print(f"CSV rows: {len(df)}")
+ISIC_IMAGE_DIR = "dataset/ISIC-images/"
+ISIC_CSV_PATH = "dataset/train.csv"
 
-image_column = "isic_id" if "isic_id" in df.columns else "image_name"
+SD198_IMAGE_DIR = "dataset/sd-198/images/"
+SD198_CLASS_PATH = "dataset/sd-198/classes.txt"
+SD198_LABELS_PATH = "dataset/sd-198/image_class_labels.txt"
+SD198_IMAGES_LIST = "dataset/sd-198/images.txt"
 
-# Remove missing diagnosis rows
-df = df[df["diagnosis"].notna()]
+CUSTOM_AUGMENT_DIR = "dataset/custom-augment/"
 
-# Create label mappings
-disease_mapping = {disease: idx for idx, disease in enumerate(df["diagnosis"].unique())}
-index_mapping = {v: k for k, v in disease_mapping.items()}
-df["target"] = df["diagnosis"].map(disease_mapping)
+IMG_SIZE = (224, 224)
 
-print("📌 Label Mapping:", disease_mapping)
+# lable grouping
+isic_group_map = {
+    "nevus": "Benign_Nevus",
+    "melanoma": "Malignant_Melanoma",
+    "seborrheic keratosis": "Benign_Keratosis",
+    "solar lentigo": "Pigmentation_Disorder",
+    "lentigo NOS": "Pigmentation_Disorder",
+    "lichenoid keratosis": "Pre_Malignant_Lesion",
+}
 
-# ==== REMOVE METADATA (EXIF) ====
-def remove_exif(image_path):
+sd198_group_map = {
+    "Acne_Vulgaris": "Acneiform", "Acne_Keloidalis_Nuchae": "Acneiform",
+    "Pomade_Acne": "Acneiform", "Pseudofolliculitis_Barbae": "Acneiform",
+    "Nevus_Comedonicus": "Acneiform",
+    "Atopic_Dermatitis": "Eczema", "Nummular_Eczema": "Eczema",
+    "Seborrheic_Dermatitis": "Eczema", "Dyshidrosiform_Eczema": "Eczema",
+    "Allergic_Contact_Dermatitis": "Eczema", "Stasis_Dermatitis": "Eczema",
+    "Neurodermatitis": "Eczema", "Frictional_Lichenoid_Dermatitis": "Eczema",
+    "Perioral_Dermatitis": "Eczema",
+    "Psoriasis": "Psoriasis", "Guttate_Psoriasis": "Psoriasis",
+    "Scalp_Psoriasis": "Psoriasis", "Pustular_Psoriasis": "Psoriasis",
+    "Nail_Psoriasis": "Psoriasis", "Mucous_Membrane_Psoriasis": "Psoriasis",
+    "Tinea_Corporis": "Fungal", "Tinea_Cruris": "Fungal",
+    "Tinea_Faciale": "Fungal", "Tinea_Manus": "Fungal",
+    "Tinea_Pedis": "Fungal", "Tinea_Versicolor": "Fungal",
+    "Onychomycosis": "Fungal",
+    "Herpes_Simplex_Virus": "Viral", "Herpes_Zoster": "Viral",
+    "Molluscum_Contagiosum": "Viral", "Verruca_Vulgaris": "Viral",
+    "Impetigo": "Bacterial", "Cellulitis": "Bacterial", "Folliculitis": "Bacterial",
+    "Melasma": "Pigmentation", "Vitiligo": "Pigmentation",
+    "Cafe_Au_Lait_Macule": "Pigmentation", "Hyperpigmentation": "Pigmentation",
+    "Actinic_solar_Damage(Pigmentation)": "Pigmentation",
+    "Seborrheic_Keratosis": "Benign_Tumor", "Dermatofibroma": "Benign_Tumor",
+    "Syringoma": "Benign_Tumor", "Lipoma": "Benign_Tumor",
+    "Sebaceous_Gland_Hyperplasia": "Benign_Tumor",
+    "Basal_Cell_Carcinoma": "Malignant", "Bowen's_Disease": "Malignant",
+    "Malignant_Melanoma": "Malignant", "Lentigo_Maligna_Melanoma": "Malignant",
+    "Beau's_Lines": "Nail_Disorder", "Nail_Dystrophy": "Nail_Disorder",
+    "Onycholysis": "Nail_Disorder", "Pincer_Nail_Syndrome": "Nail_Disorder",
+    "Subungual_Hematoma": "Nail_Disorder",
+    "Alopecia_Areata": "Alopecia", "Androgenetic_Alopecia": "Alopecia",
+    "Scarring_Alopecia": "Alopecia",
+    "Discoid_Lupus_Erythematosus": "Autoimmune", "Lichen_Planus": "Autoimmune",
+    "Lichen_Simplex_Chronicus": "Autoimmune", "Morphea": "Autoimmune",
+    "Angioma": "Vascular", "Strawberry_Hemangioma": "Vascular",
+    "Xerosis": "Other", "Callus": "Other", "Ulcer": "Other", "Scar": "Other"
+}
+
+# ISIC dataset
+isic_df = pd.read_csv(ISIC_CSV_PATH, dtype=str)
+isic_df = isic_df[isic_df["diagnosis"].notna()]
+isic_df["label_name"] = isic_df["diagnosis"].map(lambda x: isic_group_map.get(x.strip().lower(), None))
+isic_df = isic_df[isic_df["label_name"].notna()]
+isic_df["image_id"] = isic_df["isic_id"]
+isic_df["dataset"] = "ISIC"
+
+# SD-198 datset
+with open(SD198_CLASS_PATH) as f:
+    sd198_classes = [line.strip().split(" ", 1)[1] for line in f.readlines()]
+
+labels_df = pd.read_csv(SD198_LABELS_PATH, sep=" ", names=["img_id", "class_id"])
+images_df = pd.read_csv(SD198_IMAGES_LIST, sep=" ", names=["img_id", "img_path"])
+sd198_df = pd.merge(labels_df, images_df, on="img_id")
+sd198_df["label_name"] = sd198_df["class_id"].apply(lambda x: sd198_classes[x - 1])
+sd198_df["label_name"] = sd198_df["label_name"].map(lambda x: sd198_group_map.get(x, None))
+sd198_df = sd198_df[sd198_df["label_name"].notna()]
+sd198_df["image_id"] = sd198_df["img_path"].apply(lambda x: os.path.splitext(x)[0])
+sd198_df["dataset"] = "SD198"
+
+
+custom_rows = []
+for class_folder in os.listdir(CUSTOM_AUGMENT_DIR):
+    class_path = os.path.join(CUSTOM_AUGMENT_DIR, class_folder)
+    if os.path.isdir(class_path):
+        for img_file in os.listdir(class_path):
+            if img_file.lower().endswith((".jpg", ".jpeg", ".png")):
+                custom_rows.append({
+                    "image_id": img_file,
+                    "label_name": class_folder,
+                    "dataset": "CUSTOM"
+                })
+custom_df = pd.DataFrame(custom_rows)
+
+# combing datasets
+combined_df = pd.concat([
+    isic_df[["image_id", "label_name", "dataset"]],
+    sd198_df[["image_id", "label_name", "dataset"]],
+    custom_df[["image_id", "label_name", "dataset"]]
+])
+
+# label index
+label_counts = Counter(combined_df["label_name"])
+valid_labels = {label for label, count in label_counts.items() if count >= 2}
+combined_df = combined_df[combined_df["label_name"].isin(valid_labels)]
+
+label_to_index = {label: i for i, label in enumerate(sorted(valid_labels))}
+index_to_label = {i: label for label, i in label_to_index.items()}
+combined_df["target"] = combined_df["label_name"].map(label_to_index)
+
+# loading images
+def load_image(row):
+    if row["dataset"] == "ISIC":
+        path = os.path.join(ISIC_IMAGE_DIR, row["image_id"] + ".jpg")
+    elif row["dataset"] == "SD198":
+        image_name = row["image_id"].replace("images/", "")
+        path = os.path.join(SD198_IMAGE_DIR, image_name + ".jpg")
+    else:  # CUSTOM
+        for ext in (".jpg", ".jpeg", ".png"):
+            try_path = os.path.join(CUSTOM_AUGMENT_DIR, row["label_name"], row["image_id"])
+            if os.path.exists(try_path):
+                path = try_path
+                break
+        else:
+            print(f" Image missing: {row['image_id']}")
+            return None
+
     try:
-        img = Image.open(image_path)
-        img = img.convert("RGB")  # remove exif and force RGB
-        return img
+        img = Image.open(path).convert("RGB")
+        img = img.resize(IMG_SIZE)
+        return np.array(img) / 255.0
     except Exception as e:
-        print(f"⚠️ Error loading {image_path}: {e}")
+        print(f" Error loading {path}: {e}")
         return None
 
-# ==== PREPROCESS IMAGES ====
-def preprocess_image(image_id):
-    path = os.path.join(IMAGE_DIR, image_id + ".jpg")
-    img = remove_exif(path)
-    if img is None:
-        return None
-    img = np.array(img)
-    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
-    return img / 255.0  # normalize between 0-1
-
-# ==== PROCESS ALL IMAGES ====
-X, y, failed = [], [], []
-
-print("📦 Loading images...")
-for i, row in tqdm(df.iterrows(), total=len(df)):
-    img = preprocess_image(row[image_column])
+X, y = [], []
+print(" processing combined images...")
+for _, row in tqdm(combined_df.iterrows(), total=len(combined_df)):
+    img = load_image(row)
     if img is not None:
         X.append(img)
-        y.append(int(row["target"]))
-    else:
-        failed.append(row[image_column])
-
-print(f"✅ Processed: {len(X)} images | ❌ Failed: {len(failed)}")
+        y.append(row["target"])
 
 X = np.array(X)
 y = np.array(y)
 
-# ==== FILTER CLASSES (at least 2 samples required) ====
-label_counts = Counter(y)
-valid_indices = [i for i, label in enumerate(y) if label_counts[label] >= 2]
-
-X = X[valid_indices]
-y = y[valid_indices]
-
-# ==== SPLIT (70% train / 30% validation) ====
+# training split
 X_train, X_val, y_train, y_val = train_test_split(
     X, y, test_size=0.3, stratify=y, random_state=42
 )
 
-print(f"🧠 Train size: {len(X_train)} | 🧪 Val size: {len(X_val)}")
-
-# ==== SAVE DATA ====
+# saving
 np.save("X_train.npy", X_train)
 np.save("X_val.npy", X_val)
 np.save("y_train.npy", y_train)
 np.save("y_val.npy", y_val)
 
-np.save("label_to_index.npy", disease_mapping)
-np.save("index_to_label.npy", index_mapping)
+with open("label_to_index.json", "w") as f:
+    json.dump(label_to_index, f)
+with open("index_to_label.json", "w") as f:
+    json.dump(index_to_label, f)
 
-print("\n✅ Done! Saved:")
-print(" - X_train.npy")
-print(" - X_val.npy")
-print(" - y_train.npy")
-print(" - y_val.npy")
-print(" - label_to_index.npy")
-print(" - index_to_label.npy")
+# terminal output
+print(f"\n all Done! saved cleaned and merged dataset.")
+print(f" total final classes: {len(label_to_index)}")
+print(f" train samples: {len(X_train)} | val samples: {len(X_val)}")
+print("\n final sample counts per grouped class:")
+print(pd.Series(y).map(index_to_label).value_counts())
