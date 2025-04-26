@@ -147,7 +147,7 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
-#  prediction
+# prediction
 import random
 sample_indices = random.sample(range(len(X_val)), 6)
 for idx in sample_indices:

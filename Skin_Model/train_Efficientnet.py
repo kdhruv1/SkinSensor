@@ -159,6 +159,6 @@ for idx in sample_indices:
     plt.title(f"True: {true_label}\nPredicted: {pred_label} ({confidence:.1f}%)")
     plt.show()
 
-
+#d
 print(" training complete. best weights saved to 'best_efficientnet_model.h5'")
 

@@ -27,7 +27,7 @@ np.random.shuffle(indices)
 X_sample = X_sample[indices]
 y_sample = y_sample[indices]
 
-# checking to see if lableing is correct , gets random samples
+#checking to see if lableing is correct , gets random samples
 plt.figure(figsize=(15, 4))
 for i in range(5):
     label_index = int(y_sample[i])

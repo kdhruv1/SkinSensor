@@ -171,7 +171,7 @@ with open("label_to_index.json", "w") as f:
 with open("index_to_label.json", "w") as f:
     json.dump(index_to_label, f)
 
-# terminal output
+# terminal outpu
 print(f"\n all Done! saved cleaned and merged dataset.")
 print(f" total final classes: {len(label_to_index)}")
 print(f" train samples: {len(X_train)} | val samples: {len(X_val)}")
