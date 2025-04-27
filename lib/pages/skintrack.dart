@@ -1,60 +1,110 @@
+import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skinsensor2025/componenets/nav_bar.dart';
-import 'dart:io';
+import 'package:skinsensor2025/services/tf_service.dart';
+import 'package:skinsensor2025/componenets/scan_records.dart';
+
 
 class ScanningPage extends StatefulWidget {
   const ScanningPage({super.key});
-
   @override
   State<ScanningPage> createState() => _ScanningPageState();
 }
 
 class _ScanningPageState extends State<ScanningPage> {
+  final _picker = ImagePicker();
+  final _tf = TFLiteService();
+
+  File? selectedImage;
   bool isScanning = false;
   String scanResult = "";
-  File? selectedImage; // Holds the selected image from the gallery or camera
 
-  final ImagePicker _picker = ImagePicker();
-
-  void startScanning() {
-    if (selectedImage == null) {
-      setState(() {
-        scanResult = "Please select an image first.";
-      });
-      return;
-    }
-
-    setState(() {
-      isScanning = true;
-      scanResult = ""; // Clear previous results
-    });
-
-    // Simulate scanning process with a delay
-    Future.delayed(const Duration(seconds: 3), () {
-      setState(() {
-        isScanning = false;
-        scanResult = "Potential skin issue detected. Consult a dermatologist.";
-      });
-    });
+  @override
+  void initState() {
+    super.initState();
+    // load model & labels
+    _tf.loadModel();
+  }
+  Future<void> _saveScan(ScanRecord record) async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getString('scan_history') ?? '[]';
+    final list = ScanRecord.decodeList(existing);
+    list.insert(0, record);
+    await prefs.setString('scan_history', ScanRecord.encodeList(list));
   }
 
   Future<void> pickImageFromGallery() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
+    final XFile? img = await _picker.pickImage(source: ImageSource.gallery);
+    if (img != null) {
       setState(() {
-        selectedImage = File(image.path);
-        scanResult = ""; // Clear any existing scan results
+        selectedImage = File(img.path);
+        scanResult = "";
       });
     }
   }
 
   Future<void> pickImageFromCamera() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-    if (image != null) {
+    final XFile? img = await _picker.pickImage(source: ImageSource.camera);
+    if (img != null) {
       setState(() {
-        selectedImage = File(image.path);
-        scanResult = ""; // Clear any existing scan results
+        selectedImage = File(img.path);
+        scanResult = "";
+      });
+    }
+  }
+
+  Future<void> startScanning() async {
+    if (selectedImage == null) {
+      setState(() => scanResult = "Please select an image first.");
+      return;
+    }
+
+    setState(() {
+      isScanning = true;
+      scanResult = "";
+    });
+
+    try {
+      final bytes = await selectedImage!.readAsBytes();
+      final output = await _tf.runInference(bytes);
+
+
+      final pairs = <MapEntry<String, double>>[];
+      for (var i = 0; i < output.length; i++) {
+        final label = _tf.labels[i]!;
+        pairs.add(MapEntry(label, output[i]));
+      }
+      pairs.sort((a, b) => b.value.compareTo(a.value));
+
+      //im checking to see if model predicts correctly or not
+      debugPrint(" top 3 predictions:");
+      for (var i = 0; i < min(3, pairs.length); i++) {
+        debugPrint("   ${pairs[i].key}: ${(pairs[i].value * 100).toStringAsFixed(1)}%");
+      }
+
+      final best = pairs.first;
+      final confidencePct = best.value * 100.0;
+
+      // save into history
+      final rec = ScanRecord(
+        imagePath: selectedImage!.path,
+        label: best.key,
+        confidence: confidencePct,
+        timestamp: DateTime.now(),
+      );
+      await _saveScan(rec);
+
+      setState(() {
+        isScanning = false;
+        scanResult = "${best.key} — ${confidencePct.toStringAsFixed(1)}%";
+      });
+    } catch (e) {
+      setState(() {
+        isScanning = false;
+        scanResult = "error running model:\n$e";
       });
     }
   }
@@ -67,11 +117,11 @@ class _ScanningPageState extends State<ScanningPage> {
         backgroundColor: Colors.red[300],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Displays an selected image or camera preview placeholder
+            // image preview
             Container(
               height: 400,
               width: double.infinity,
@@ -80,20 +130,15 @@ class _ScanningPageState extends State<ScanningPage> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: selectedImage != null
-                  ? Image.file(
-                selectedImage!,
-                fit: BoxFit.cover,
-              )
+                  ? Image.file(selectedImage!, fit: BoxFit.cover)
                   : const Center(
-                child: Text(
-                  "No Image Selected",
-                  style: TextStyle(color: Colors.black54),
-                ),
+                child: Text("No Image Selected",
+                    style: TextStyle(color: Colors.black54)),
               ),
             ),
             const SizedBox(height: 16),
 
-            // Scan result section
+            // result box
             if (scanResult.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(16),
@@ -104,16 +149,14 @@ class _ScanningPageState extends State<ScanningPage> {
                 child: Text(
                   scanResult,
                   style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      color: Colors.black, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
               ),
 
             const Spacer(),
 
-            // Gallery and Camera buttons
+            // pick buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -122,38 +165,34 @@ class _ScanningPageState extends State<ScanningPage> {
                   icon: const Icon(Icons.photo),
                   label: const Text("Gallery"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[300],
-                    minimumSize: const Size(150, 50),
-                  ),
+                      backgroundColor: Colors.red[300],
+                      minimumSize: const Size(150, 50)),
                 ),
                 ElevatedButton.icon(
                   onPressed: pickImageFromCamera,
                   icon: const Icon(Icons.camera_alt),
                   label: const Text("Camera"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[300],
-                    minimumSize: const Size(150, 50),
-                  ),
+                      backgroundColor: Colors.red[300],
+                      minimumSize: const Size(150, 50)),
                 ),
               ],
             ),
             const SizedBox(height: 16),
 
-            // Scan button
+            // scan button
             ElevatedButton.icon(
               onPressed: isScanning ? null : startScanning,
               icon: const Icon(Icons.search),
               label: Text(isScanning ? "Scanning..." : "Start Scan"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[300],
-                minimumSize: const Size(double.infinity, 50),
-              ),
+                  backgroundColor: Colors.red[300],
+                  minimumSize: const Size(double.infinity, 50)),
             ),
           ],
         ),
       ),
       bottomNavigationBar: const NavBar(currentIndex: 1),
     );
-
   }
 }

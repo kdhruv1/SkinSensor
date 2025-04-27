@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'services/tf_service.dart';
 import 'pages/login.dart';
+import 'pages/skintrack.dart';
+import 'pages/track_history.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await TFLiteService().loadModel();
   runApp(const MyApp());
 }
 

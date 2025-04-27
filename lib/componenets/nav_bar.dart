@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:skinsensor2025/pages/home.dart';
 import 'package:skinsensor2025/pages/login.dart';
 import 'package:skinsensor2025/pages/skintrack.dart';
+import 'package:skinsensor2025/pages/track_history.dart';
 
 class NavBar extends StatefulWidget {
   final int currentIndex; // Current active index
@@ -31,7 +32,7 @@ class _NavBarState extends State<NavBar> {
       case 2:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
+          MaterialPageRoute(builder: (context) => const TrackHistoryPage()),
         );
         break;
     }

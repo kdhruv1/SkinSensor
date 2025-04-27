@@ -1,0 +1,129 @@
+{
+  "Benign Nevus": {
+    "image": "lib/images/holder.jpg",
+    "description": "A benign nevus is a common mole that is typically harmless.",
+    "treatments": [
+      { "name": "No treatment needed", "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Malignant Melanoma": {
+    "image": "lib/images/holder.jpg",
+    "description": "A dangerous form of skin cancer that can spread rapidly.",
+    "treatments": [
+      { "name": "Surgical excision",  "image": "lib/images/holder.jpg" },
+      { "name": "Chemotherapy",       "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Fungal": {
+    "image": "lib/images/holder.jpg",
+    "description": "Fungal infections such as ringworm or athlete’s foot.",
+    "treatments": [
+      { "name": "Antifungal cream",    "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Eczema": {
+    "image": "lib/images/holder.jpg",
+    "description": "Dry, itchy, inflamed skin often triggered by irritants.",
+    "treatments": [
+      { "name": "Moisturizing cream", "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Benign Tumor": {
+    "image": "lib/images/holder.jpg",
+    "description": "Non-cancerous growths like lipomas or dermatofibromas.",
+    "treatments": [
+      { "name": "Observation",        "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Acneiform": {
+    "image": "lib/images/holder.jpg",
+    "description": "Pimples, blackheads, and whiteheads caused by clogged pores.",
+    "treatments": [
+      { "name": "Salicylic acid",      "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Viral": {
+    "image": "lib/images/holder.jpg",
+    "description": "Viral skin lesions such as herpes or molluscum contagiosum.",
+    "treatments": [
+      { "name": "Antiviral medication","image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Psoriasis": {
+    "image": "lib/images/holder.jpg",
+    "description": "Autoimmune condition causing scaly, red patches on skin.",
+    "treatments": [
+      { "name": "Coal tar ointment",   "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Malignant": {
+    "image": "lib/images/holder.jpg",
+    "description": "General category for malignant skin lesions.",
+    "treatments": [
+      { "name": "Surgical removal",    "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Autoimmune": {
+    "image": "lib/images/holder.jpg",
+    "description": "Immune-mediated skin disorders like lupus or lichen planus.",
+    "treatments": [
+      { "name": "Steroid cream",       "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Alopecia": {
+    "image": "lib/images/holder.jpg",
+    "description": "Hair loss conditions, such as alopecia areata.",
+    "treatments": [
+      { "name": "Topical minoxidil",   "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Pigmentation": {
+    "image": "lib/images/holder.jpg",
+    "description": "Disorders like melasma or vitiligo affecting skin color.",
+    "treatments": [
+      { "name": "Skin lightening cream","image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Pre Malignant Lesion": {
+    "image": "lib/images/holder.jpg",
+    "description": "Lesions that may evolve into cancer if untreated.",
+    "treatments": [
+      { "name": "Cryotherapy",        "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Vascular": {
+    "image": "lib/images/holder.jpg",
+    "description": "Blood-vessel related lesions like angiomas.",
+    "treatments": [
+      { "name": "Laser therapy",       "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Bacterial": {
+    "image": "lib/images/holder.jpg",
+    "description": "Bacterial infections such as impetigo or cellulitis.",
+    "treatments": [
+      { "name": "Topical antibiotics",  "image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Nail Disorder": {
+    "image": "lib/images/holder.jpg",
+    "description": "Conditions affecting nails, e.g., onycholysis or Beau’s lines.",
+    "treatments": [
+      { "name": "Antifungal nail lacquer","image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Other": {
+    "image": "lib/images/holder.jpg",
+    "description": "Miscellaneous skin conditions not in other categories.",
+    "treatments": [
+      { "name": "Consult dermatologist","image": "lib/images/holder.jpg" }
+    ]
+  },
+  "Benign Keratosis": {
+    "image": "lib/images/holder.jpg",
+    "description": "Non-cancerous keratoses such as seborrheic keratosis.",
+    "treatments": [
+      { "name": "Cryotherapy",         "image": "lib/images/holder.jpg" }
+    ]
+  }
+}
