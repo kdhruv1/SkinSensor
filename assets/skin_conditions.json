@@ -1,129 +1,186 @@
 {
   "Benign Nevus": {
-    "image": "lib/images/holder.jpg",
-    "description": "A benign nevus is a common mole that is typically harmless.",
+    "image": "lib/images/nevus1.jpg",
+    "description": "A benign nevus (mole) is a cluster of melanocytes that appears as a small, well-defined pigmented spot on the skin. It is usually uniform in color and shape, and carries minimal risk of malignancy.",
     "treatments": [
-      { "name": "No treatment needed", "image": "lib/images/holder.jpg" }
+      {
+        "name": "Regular self-examination and dermatology check-ups",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Malignant Melanoma": {
-    "image": "lib/images/holder.jpg",
-    "description": "A dangerous form of skin cancer that can spread rapidly.",
+    "image": "lib/images/melanoma.jpg",
+    "description": "Malignant melanoma is a serious form of skin cancer originating from melanocytes. It often presents as a changing mole or dark patch with irregular borders, and can metastasize if not caught early.",
     "treatments": [
-      { "name": "Surgical excision",  "image": "lib/images/holder.jpg" },
-      { "name": "Chemotherapy",       "image": "lib/images/holder.jpg" }
+      {
+        "name": "Wide local surgical excision",
+        "image": "lib/images/holder.jpg"
+      },
+      {
+        "name": "Adjuvant immunotherapy or chemotherapy",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Fungal": {
-    "image": "lib/images/holder.jpg",
-    "description": "Fungal infections such as ringworm or athlete’s foot.",
+    "image": "lib/images/Fungal.jpg",
+    "description": "Fungal infections (e.g., tinea corporis, athlete’s foot) are caused by dermatophytes. They appear as itchy, red, ring-shaped lesions with central clearing.",
     "treatments": [
-      { "name": "Antifungal cream",    "image": "lib/images/holder.jpg" }
+      {
+        "name": "Topical or oral antifungal agents (e.g., terbinafine)",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Eczema": {
-    "image": "lib/images/holder.jpg",
-    "description": "Dry, itchy, inflamed skin often triggered by irritants.",
+    "image": "lib/images/eczema.jpg",
+    "description": "Eczema (atopic dermatitis) is a chronic, relapsing inflammatory skin condition characterized by dry, itchy, and red patches, often triggered by allergens or irritants.",
     "treatments": [
-      { "name": "Moisturizing cream", "image": "lib/images/holder.jpg" }
+      {
+        "name": "Moisturizing emollients and topical corticosteroids",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Benign Tumor": {
-    "image": "lib/images/holder.jpg",
-    "description": "Non-cancerous growths like lipomas or dermatofibromas.",
+    "image": "lib/images/beingn-tumor.jpg",
+    "description": "Benign skin tumors (e.g., lipomas, dermatofibromas) are non-cancerous growths that typically grow slowly and do not spread to other tissues.",
     "treatments": [
-      { "name": "Observation",        "image": "lib/images/holder.jpg" }
+      {
+        "name": "Observation or elective surgical removal",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Acneiform": {
-    "image": "lib/images/holder.jpg",
-    "description": "Pimples, blackheads, and whiteheads caused by clogged pores.",
+    "image": "lib/images/acne.jpg",
+    "description": "Acneiform eruptions include acne vulgaris and related disorders, presenting with comedones, papules, pustules, and sometimes cysts on oily skin areas.",
     "treatments": [
-      { "name": "Salicylic acid",      "image": "lib/images/holder.jpg" }
+      {
+        "name": "Topical retinoids and salicylic acid cleansers",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Viral": {
-    "image": "lib/images/holder.jpg",
-    "description": "Viral skin lesions such as herpes or molluscum contagiosum.",
+    "image": "lib/images/viral.jpg",
+    "description": "Viral skin infections (e.g., herpes simplex, molluscum contagiosum) cause grouped vesicles or dome-shaped papules, often with a clear fluid.",
     "treatments": [
-      { "name": "Antiviral medication","image": "lib/images/holder.jpg" }
+      {
+        "name": "Antiviral medications (e.g., acyclovir)",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Psoriasis": {
-    "image": "lib/images/holder.jpg",
-    "description": "Autoimmune condition causing scaly, red patches on skin.",
+    "image": "lib/images/Psoriasis.jpg",
+    "description": "Psoriasis is an autoimmune disorder featuring well-demarcated, silvery scaly plaques on extensor surfaces. It often follows a chronic course with flares and remissions.",
     "treatments": [
-      { "name": "Coal tar ointment",   "image": "lib/images/holder.jpg" }
+      {
+        "name": "Topical vitamin D analogues or coal tar preparations",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Malignant": {
-    "image": "lib/images/holder.jpg",
-    "description": "General category for malignant skin lesions.",
+    "image": "lib/images/Malignant.png",
+    "description": "This category encompasses various malignant skin lesions (other than melanoma) such as basal cell carcinoma and squamous cell carcinoma, characterized by persistent non-healing lesions.",
     "treatments": [
-      { "name": "Surgical removal",    "image": "lib/images/holder.jpg" }
+      {
+        "name": "Surgical excision with clear margins",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Autoimmune": {
-    "image": "lib/images/holder.jpg",
-    "description": "Immune-mediated skin disorders like lupus or lichen planus.",
+    "image": "lib/images/Autoimmune.jpg",
+    "description": "Autoimmune skin diseases (e.g., lupus erythematosus, lichen planus) result from immune-mediated tissue damage, appearing as rashes, plaques, or mucosal lesions.",
     "treatments": [
-      { "name": "Steroid cream",       "image": "lib/images/holder.jpg" }
+      {
+        "name": "Topical or systemic corticosteroids",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Alopecia": {
-    "image": "lib/images/holder.jpg",
-    "description": "Hair loss conditions, such as alopecia areata.",
+    "image": "lib/images/Alopecia.jpg",
+    "description": "Alopecia disorders (e.g., alopecia areata) involve non-scarring hair loss in patches. They may be autoimmune in nature and can fluctuate over time.",
     "treatments": [
-      { "name": "Topical minoxidil",   "image": "lib/images/holder.jpg" }
+      {
+        "name": "Topical minoxidil or intralesional corticosteroids",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Pigmentation": {
-    "image": "lib/images/holder.jpg",
-    "description": "Disorders like melasma or vitiligo affecting skin color.",
+    "image": "lib/images/pigmentation.jpeg",
+    "description": "Pigmentation disorders (e.g., melasma, vitiligo) cause hypo- or hyperpigmented patches due to melanocyte dysfunction or loss.",
     "treatments": [
-      { "name": "Skin lightening cream","image": "lib/images/holder.jpg" }
+      {
+        "name": "Topical hydroquinone or narrowband UVB therapy",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Pre Malignant Lesion": {
-    "image": "lib/images/holder.jpg",
-    "description": "Lesions that may evolve into cancer if untreated.",
+    "image": "lib/images/Pre.jpg",
+    "description": "Pre-malignant skin lesions (e.g., actinic keratosis) are dysplastic changes that can progress to squamous cell carcinoma if untreated.",
     "treatments": [
-      { "name": "Cryotherapy",        "image": "lib/images/holder.jpg" }
+      {
+        "name": "Cryotherapy or topical 5-fluorouracil",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Vascular": {
-    "image": "lib/images/holder.jpg",
-    "description": "Blood-vessel related lesions like angiomas.",
+    "image": "lib/images/vascular.jpg",
+    "description": "Vascular lesions (e.g., hemangiomas, angiomas) are benign proliferations of blood vessels, often appearing red or purple on the skin.",
     "treatments": [
-      { "name": "Laser therapy",       "image": "lib/images/holder.jpg" }
+      {
+        "name": "Pulsed dye laser therapy",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Bacterial": {
-    "image": "lib/images/holder.jpg",
-    "description": "Bacterial infections such as impetigo or cellulitis.",
+    "image": "lib/images/Bacterial.jpg",
+    "description": "Bacterial skin infections (e.g., impetigo, cellulitis) present with erythema, warmth, swelling, and sometimes pustules or honey-colored crusts.",
     "treatments": [
-      { "name": "Topical antibiotics",  "image": "lib/images/holder.jpg" }
+      {
+        "name": "Topical or oral antibiotics (e.g., mupirocin)",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Nail Disorder": {
-    "image": "lib/images/holder.jpg",
-    "description": "Conditions affecting nails, e.g., onycholysis or Beau’s lines.",
+    "image": "lib/images/Nail Disorder.jpg",
+    "description": "Nail disorders (e.g., onycholysis, Beau’s lines) can result from trauma, infection, or systemic disease, altering nail color, thickness or contour.",
     "treatments": [
-      { "name": "Antifungal nail lacquer","image": "lib/images/holder.jpg" }
+      {
+        "name": "Antifungal nail lacquer or corrective nail care",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Other": {
     "image": "lib/images/holder.jpg",
-    "description": "Miscellaneous skin conditions not in other categories.",
+    "description": "This category includes miscellaneous skin conditions not fitting other groups, such as scars, calluses, or idiopathic rashes.",
     "treatments": [
-      { "name": "Consult dermatologist","image": "lib/images/holder.jpg" }
+      {
+        "name": "Refer to a dermatologist for personalized care",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   },
   "Benign Keratosis": {
-    "image": "lib/images/holder.jpg",
-    "description": "Non-cancerous keratoses such as seborrheic keratosis.",
+    "image": "lib/images/Benign Keratosis.jpg",
+    "description": "Benign keratoses (e.g., seborrheic keratosis) are common, stuck-on-appearing waxy plaques that rarely progress to malignancy.",
     "treatments": [
-      { "name": "Cryotherapy",         "image": "lib/images/holder.jpg" }
+      {
+        "name": "Cryotherapy or curettage if symptomatic",
+        "image": "lib/images/holder.jpg"
+      }
     ]
   }
 }
